@@ -145,4 +145,23 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Последний запуск: %1$s</string>
+    <!-- Local additions (Extras.java) -->
+    <string name="extras_title">Дополнения</string>
+    <string name="extras_hint">Кнопка «Настройки» открывает быструю панель: таймер сна, освобождение памяти, экран и звук, Bluetooth. «Продолжить» — то, что вы смотрите в Lampa и других приложениях.</string>
+    <string name="extra_state">%1$s: %2$s</string>
+    <string name="extra_settings_panel">Кнопка «Настройки» открывает панель</string>
+    <string name="extra_quick_toggles">Экран и звук, Bluetooth</string>
+    <string name="continue_watching">Продолжить</string>
+    <string name="continue_status">%1$s · %2$d%%</string>
+    <string name="sleep_timer">Таймер сна</string>
+    <string name="sleep_in">через %1$d мин</string>
+    <string name="sleep_no_service">Таймер сна: включите службу кнопок пульта (InputKeyService), иначе приставка не уснёт</string>
+    <string name="free_memory">Освободить память</string>
+    <string name="free_memory_running">Освобождаю…</string>
+    <string name="free_memory_done">+%1$d МБ</string>
+    <string name="quick_display_sound">Экран и звук</string>
+    <string name="quick_bluetooth">Bluetooth и пульты</string>
+    <string name="poster_dream_name">Постеры</string>
+    <string name="extra_home_weather">Погода под часами</string>
+    <string name="weather_feels">ощущается %1$s</string>
 </resources>

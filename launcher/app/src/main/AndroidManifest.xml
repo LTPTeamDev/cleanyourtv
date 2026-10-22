@@ -22,9 +22,32 @@
          this permission (protection level normal, so it is granted at install). Ignored on other TVs. -->
     <uses-permission android:name="yandex.tv.permission.ACCESS_TV_SOURCE" />
 
+    <!-- Local additions (Extras.java). -->
+    <!-- Continue watching and the poster screensaver: the posters other apps publish are web addresses. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Continue watching and the poster screensaver read the TV provider's Watch Next and preview rows.
+         A runtime permission, granted with pm grant. -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <!-- Quick panel: Free memory. -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <!-- Quick panel: Bluetooth & remotes. Google TV's AddAccessoryActivity requires BLUETOOTH_ADMIN of its caller
+         (a normal permission up to Android 11; this row is for that box). -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->
     <queries>
+        <!-- Quick panel rows (Extras.QUICK_TOGGLES). -->
+        <intent>
+            <action android:name="android.settings.SOUND_SETTINGS" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.BLUETOOTH_SETTINGS" />
+        </intent>
+        <package android:name="com.android.tv.settings" />
+        <!-- Weather line (Extras.HOME_WEATHER): the Weather add-on's provider. -->
+        <provider android:authorities="io.github.sumyabazar1.weather.home" />
         <!-- The standard settings handlers, so package visibility doesn't hide them and send the pills to a vendor fallback by mistake. -->
         <intent>
             <action android:name="android.settings.SETTINGS" />
@@ -71,6 +94,7 @@
         android:banner="@drawable/banner"
         android:theme="@style/Theme.TvHome"
         android:allowBackup="false"
+        android:usesCleartextTraffic="true"
         android:localeConfig="@xml/locales_config">
 
         <activity
@@ -168,6 +192,24 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+
+        <!-- Poster screensaver (local addition): Lampa's rows and Continue watching, with the clock.
+             `settings put secure screensaver_components com.gathin.tvhome/.PosterDream` over adb. -->
+        <service
+            android:name=".PosterDream"
+            android:label="@string/poster_dream_name"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <!-- Sleep timer alarm (local addition); only this app's own PendingIntent reaches it. -->
+        <receiver
+            android:name=".SleepTimer$Receiver"
+            android:exported="false" />
 
         <!-- tools/theme.sh writes the theme through this where the shell can't reach Android/data;
              see ThemeProvider. WRITE_SECURE_SETTINGS: the adb shell has it, ordinary apps don't. -->

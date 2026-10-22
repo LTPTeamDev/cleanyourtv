@@ -165,6 +165,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView greeting;
     private View clockBlock;
     private View btnInputs;
+    /** Local additions (Extras): read with the rest of the config in onCreate. */
+    private Extras extras;
+    /** Extras.CONTINUE_WATCHING: the pill, shown while the Watch Next row has something in it. */
+    private View btnContinue;
+    private List<WatchNext.Item> continueItems = new ArrayList<>();
     /** config show_inputs_pill: false keeps the Inputs pill hidden even when the TV has inputs. */
     private boolean showInputsPill = true;
     private TextView btnWifi;
@@ -578,6 +583,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
 
         btnInputs = findViewById(R.id.btnInputs);
+        extras = Extras.load(this);
+        btnContinue = findViewById(R.id.btnContinue);
+        btnContinue.setOnClickListener(v -> showContinue());
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
@@ -593,6 +601,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+            else if (extras.on(Extras.SETTINGS_PANEL)) open(new Intent(this, QuickSettingsActivity.class));
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -649,19 +658,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
+            int firstButton = btnContinue.getVisibility() == View.VISIBLE ? R.id.btnContinue
+                    : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
+        btnContinue.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            for (View button : new View[]{btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings}) {
+            for (View button : new View[]{btnContinue, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings}) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
                         .scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
                         .setDuration(reducedMotion ? Motion.REDUCED_MS : 160).start());
@@ -835,6 +846,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             pillsShown = true;
         }
         if (showStats) startStats();
+        refreshContinue();
+        startWeather();
         sky.update();
         wallpaperPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
@@ -1012,6 +1025,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
         stopStats();
+        handler.removeCallbacks(weatherTick);
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
@@ -2847,6 +2861,103 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     // ---- launcher settings and module cards -------------------------------------------------------
+
+    // ---- Weather line (Extras.HOME_WEATHER) -------------------------------------------------------------
+
+    /** Re-reads the weather now and every REFRESH_MS while Home is on screen. */
+    private final Runnable weatherTick = new Runnable() {
+        @Override
+        public void run() {
+            Context app = getApplicationContext();
+            new Thread(() -> {
+                String line = HomeWeather.line(app);
+                handler.post(() -> {
+                    if (isFinishing() || isDestroyed() || !extras.on(Extras.HOME_WEATHER)) return;
+                    TextView view = findViewById(R.id.weatherLine);
+                    // Keep the last good reading on a failed refresh; hide only when there never was one.
+                    if (line != null) view.setText(line);
+                    view.setVisibility(view.getText().length() > 0 ? View.VISIBLE : View.GONE);
+                });
+            }, "home-weather").start();
+            handler.postDelayed(this, HomeWeather.REFRESH_MS);
+        }
+    };
+
+    private void startWeather() {
+        handler.removeCallbacks(weatherTick);
+        if (!extras.on(Extras.HOME_WEATHER)) {
+            findViewById(R.id.weatherLine).setVisibility(View.GONE);
+            return;
+        }
+        handler.post(weatherTick);
+    }
+
+    // ---- Continue watching (Extras.CONTINUE_WATCHING) ---------------------------------------------------
+
+    /** Re-reads the Watch Next row off the main thread and shows the pill while it has anything in it. */
+    private void refreshContinue() {
+        if (!extras.on(Extras.CONTINUE_WATCHING)) {
+            btnContinue.setVisibility(View.GONE);
+            return;
+        }
+        Context app = getApplicationContext();
+        new Thread(() -> {
+            List<WatchNext.Item> items = WatchNext.continueWatching(app, 8);
+            handler.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                continueItems = items;
+                boolean show = !items.isEmpty();
+                if (!show && btnContinue.hasFocus()) firstTopButton().requestFocus();
+                btnContinue.setVisibility(show ? View.VISIBLE : View.GONE);
+            });
+        }, "watch-next").start();
+    }
+
+    /** The pill's dropdown: one row per title, poster on the left, newest first. */
+    private void showContinue() {
+        if (continueItems.isEmpty()) return;
+        View panel = getLayoutInflater().inflate(R.layout.popup_watch, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        int width = (int) (380 * density);
+        PopupWindow popup = glassPopup(panel, width);
+        // Under the pill down to the bottom edge, so the list scrolls instead of running off the screen.
+        int[] at = new int[2];
+        btnContinue.getLocationOnScreen(at);
+        int room = getResources().getDisplayMetrics().heightPixels - at[1] - btnContinue.getHeight() - (int) (40 * density);
+        int rowHeight = (int) (84 * density);
+        if (continueItems.size() * rowHeight + 12 * density > room) {
+            View scroll = panel.findViewById(R.id.scroll);
+            scroll.getLayoutParams().height = Math.max(rowHeight, room);
+        }
+        PackageManager pm = getPackageManager();
+        int posterW = (int) (48 * density), posterH = (int) (72 * density);
+        for (WatchNext.Item item : continueItems) {
+            View row = getLayoutInflater().inflate(R.layout.item_watch, rows, false);
+            ((TextView) row.findViewById(R.id.title)).setText(item.title);
+            String appName = item.pkg;
+            try {
+                appName = pm.getApplicationLabel(pm.getApplicationInfo(item.pkg, 0)).toString();
+            } catch (PackageManager.NameNotFoundException | NullPointerException ignored) {
+                // keep the package name
+            }
+            int percent = item.percent();
+            ((TextView) row.findViewById(R.id.status)).setText(percent < 0 ? appName
+                    : getString(R.string.continue_status, appName, percent));
+            ImageView poster = row.findViewById(R.id.poster);
+            Posters.load(this, item.poster != null ? item.poster : item.thumbnail, posterW, posterH, bitmap -> {
+                if (bitmap != null) poster.setImageBitmap(bitmap);
+            });
+            row.setOnClickListener(v -> {
+                popup.dismiss();
+                Intent intent = WatchNext.intent(this, item);
+                if (intent != null) open(intent);
+                else Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+            });
+            rows.addView(row);
+        }
+        dropIn(popup, panel, btnContinue, getResources().getBoolean(R.bool.rtl_menu_bar) ? Gravity.END : Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
 
     /** top_menu: the gear's dropdown, standing in for the Inputs, Wi-Fi and Settings pills. */
     private void showTopMenu() {

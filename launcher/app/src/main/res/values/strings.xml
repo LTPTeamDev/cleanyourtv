@@ -145,4 +145,23 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+    <!-- Local additions (Extras.java) -->
+    <string name="extras_title">Extras</string>
+    <string name="extras_hint">Settings button: opens the quick panel with the sleep timer, free memory, display &amp; sound and Bluetooth instead of the TV\'s Settings. Continue: what you watch in Lampa and other apps.</string>
+    <string name="extra_state">%1$s: %2$s</string>
+    <string name="extra_settings_panel">Settings button opens the quick panel</string>
+    <string name="extra_quick_toggles">Display &amp; sound and Bluetooth</string>
+    <string name="continue_watching">Continue</string>
+    <string name="continue_status">%1$s · %2$d%%</string>
+    <string name="sleep_timer">Sleep timer</string>
+    <string name="sleep_in">in %1$d min</string>
+    <string name="sleep_no_service">Sleep timer: turn on the remote buttons helper (InputKeyService) so the box can go to sleep</string>
+    <string name="free_memory">Free memory</string>
+    <string name="free_memory_running">Freeing…</string>
+    <string name="free_memory_done">+%1$d MB</string>
+    <string name="quick_display_sound">Display &amp; sound</string>
+    <string name="quick_bluetooth">Bluetooth &amp; remotes</string>
+    <string name="poster_dream_name">Posters</string>
+    <string name="extra_home_weather">Weather under the clock</string>
+    <string name="weather_feels">feels %1$s</string>
 </resources>

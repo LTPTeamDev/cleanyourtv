@@ -292,6 +292,24 @@
          "show_stats": true. Nothing is read, and the clock does not move, while this is false. -->
     <bool name="show_stats">true</bool>
 
+    <!-- Local additions (Extras.java). Each can be overridden by a theme's config.json with the same key and
+         switched on or off on the TV in Launcher settings. -->
+    <!-- The header Settings pill opens the quick panel (sleep timer, free memory, display & sound, Bluetooth, TV
+         settings, Launcher settings) instead of the TV's Settings. -->
+    <bool name="settings_pill_panel">true</bool>
+    <!-- Quick panel: sleep timer (Off, 15, 30, 60, 90 minutes); puts the box to sleep through InputKeyService. -->
+    <bool name="sleep_timer">true</bool>
+    <!-- Quick panel: stop background apps and show how much memory came back. -->
+    <bool name="free_memory">true</bool>
+    <!-- Quick panel: Display & sound and Bluetooth accessories rows. -->
+    <bool name="quick_toggles">true</bool>
+    <!-- "Continue" pill listing the Watch Next rows other apps publish (Lampa does), with posters. Needs
+         READ_TV_LISTINGS (pm grant) and loads the posters from the network. -->
+    <bool name="continue_watching">true</bool>
+    <!-- The weather now under the clock (city, temperature, sky, feels-like, today's high and low), read from the
+         Weather add-on (addons/weather), which keeps the city. Nothing shows without the add-on or a city. -->
+    <bool name="home_weather">true</bool>
+
     <!-- Time-of-day backdrop behind everything: a dark gradient that follows the clock, with a warm
          horizon glow around sunrise and sunset. 0 keeps the plain background (the default); 1 to 100
          sets its opacity. Around 60 reads clearly without hiding a wallpaper. Can also be set with

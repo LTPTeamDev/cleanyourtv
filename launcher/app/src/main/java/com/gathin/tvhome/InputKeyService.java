@@ -28,9 +28,25 @@ public class InputKeyService extends AccessibilityService {
     /** restore_key_services was on when the config was read: this helper is noted for ServiceRepair. */
     private boolean repairRecord;
 
+    /** The running service, for SleepTimer; null while the helper is off. */
+    private static volatile InputKeyService running;
+
+    /** Puts the box to sleep (lock screen, which on Android TV sleeps the device). False without the service. */
+    static boolean sleepNow() {
+        InputKeyService service = running;
+        return service != null && service.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
+    }
+
+    @Override
+    public void onDestroy() {
+        if (running == this) running = null;
+        super.onDestroy();
+    }
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        running = this;
         // From config.xml or a theme's config.json; theme.sh rebinds this service after a push.
         Config config = Config.load(this);
         // restore_key_services: note that this helper runs, so Home can put it back after a force stop.
@@ -70,6 +86,7 @@ public class InputKeyService extends AccessibilityService {
     /** Unbound by Android: the user turned the helper off, so Home doesn't put it back (ServiceRepair). */
     @Override
     public boolean onUnbind(Intent intent) {
+        if (running == this) running = null;
         if (repairRecord) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }

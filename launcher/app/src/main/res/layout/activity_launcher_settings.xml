@@ -3,7 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FF101419"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:requiresFadingEdge="vertical"
+    android:fadingEdgeLength="56dp"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -108,6 +111,30 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/advanced_effects_warning"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
+
+        <!-- Local additions (Extras.java): each row switches one on or off on this TV. -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/extras_title"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp" />
+
+        <TextView android:id="@+id/extraSettingsPanel" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+        <TextView android:id="@+id/extraSleepTimer" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+        <TextView android:id="@+id/extraFreeMemory" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+        <TextView android:id="@+id/extraQuickToggles" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+        <TextView android:id="@+id/extraContinue" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+        <TextView android:id="@+id/extraWeather" style="@style/SettingsRow" android:layout_marginTop="10dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/extras_hint"
             android:textColor="#FFACB8C1"
             android:textSize="14sp" />
 

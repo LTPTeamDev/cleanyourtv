@@ -27,6 +27,13 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
+    /** Extras rows, in the order of Extras.KEYS, with their label resources. */
+    private static final int[] EXTRA_ROWS = {R.id.extraSettingsPanel, R.id.extraSleepTimer, R.id.extraFreeMemory,
+            R.id.extraQuickToggles, R.id.extraContinue, R.id.extraWeather};
+    private static final int[] EXTRA_LABELS = {R.string.extra_settings_panel, R.string.sleep_timer,
+            R.string.free_memory, R.string.extra_quick_toggles, R.string.continue_watching, R.string.extra_home_weather};
+    private final TextView[] extraChoices = new TextView[EXTRA_ROWS.length];
+    private Extras extras;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -118,12 +125,26 @@ public final class LauncherSettingsActivity extends Activity {
                         .show();
             }
         });
+        extras = Extras.load(this);
+        for (int i = 0; i < EXTRA_ROWS.length; i++) {
+            final String key = Extras.KEYS[i];
+            extraChoices[i] = findViewById(EXTRA_ROWS[i]);
+            extraChoices[i].setOnClickListener(v -> {
+                Extras.choose(this, key, !extras.on(key));
+                extras = Extras.load(this);
+                changed();
+                refresh();
+            });
+        }
         followThemeChoice = findViewById(R.id.followThemeChoice);
         followThemeChoice.setOnClickListener(v -> {
             if (!hasOnTvChoices()) return;
-            choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
-                    .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).commit();
+            SharedPreferences.Editor reset = choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY)
+                    .remove("animations").remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
+                    .remove(Config.DOCK_OPACITY_KEY);
+            Extras.clearChoices(reset);
+            reset.commit();
+            extras = Extras.load(this);
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -232,11 +253,15 @@ public final class LauncherSettingsActivity extends Activity {
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
+        for (int i = 0; i < extraChoices.length; i++) {
+            extraChoices[i].setText(getString(R.string.extra_state, getString(EXTRA_LABELS[i]),
+                    getString(extras.on(Extras.KEYS[i]) ? R.string.on : R.string.off)));
+        }
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
     private boolean hasOnTvChoices() {
-        return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
+        return Extras.hasChoices(choices) || choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY);
     }
