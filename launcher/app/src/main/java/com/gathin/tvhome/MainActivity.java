@@ -2874,9 +2874,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 handler.post(() -> {
                     if (isFinishing() || isDestroyed() || !extras.on(Extras.HOME_WEATHER)) return;
                     TextView view = findViewById(R.id.weatherLine);
-                    // Keep the last good reading on a failed refresh; hide only when there never was one.
+                    // Keep the last good reading on a failed refresh. The line keeps its space either way (INVISIBLE,
+                    // never GONE): text arriving after layout would push the dock down under the glass highlight.
                     if (line != null) view.setText(line);
-                    view.setVisibility(view.getText().length() > 0 ? View.VISIBLE : View.GONE);
+                    view.setVisibility(view.getText().length() > 0 ? View.VISIBLE : View.INVISIBLE);
                 });
             }, "home-weather").start();
             handler.postDelayed(this, HomeWeather.REFRESH_MS);
@@ -2888,6 +2889,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!extras.on(Extras.HOME_WEATHER)) {
             findViewById(R.id.weatherLine).setVisibility(View.GONE);
             return;
+        }
+        // Reserve the line's height before the first layout (see weatherTick).
+        TextView view = findViewById(R.id.weatherLine);
+        if (view.getVisibility() == View.GONE) {
+            view.setText(" ");
+            view.setVisibility(View.INVISIBLE);
         }
         handler.post(weatherTick);
     }

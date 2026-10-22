@@ -41,7 +41,8 @@ public final class QuickSettingsActivity extends Activity {
             addSleepRow(rows);
             added = true;
         }
-        if (extras.on(Extras.FREE_MEMORY)) {
+        // Android 14 lets an app stop only its own background processes, so the row would always free 0 MB.
+        if (extras.on(Extras.FREE_MEMORY) && android.os.Build.VERSION.SDK_INT < 34) {
             addMemoryRow(rows);
             added = true;
         }
