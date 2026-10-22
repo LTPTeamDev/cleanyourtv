@@ -57,14 +57,23 @@ final class Forecast {
         final List<Day> days;
         /** US AQI, or -1 when the air quality read failed. */
         final int aqi;
+        /** Today's high and low (for the launcher's home line); Integer.MIN_VALUE when unknown. */
+        final int todayMaxC;
+        final int todayMinC;
 
         Report(int tempC, int feelsC, int code, boolean day, List<Day> days, int aqi) {
+            this(tempC, feelsC, code, day, days, aqi, Integer.MIN_VALUE, Integer.MIN_VALUE);
+        }
+
+        Report(int tempC, int feelsC, int code, boolean day, List<Day> days, int aqi, int todayMaxC, int todayMinC) {
             this.tempC = tempC;
             this.feelsC = feelsC;
             this.code = code;
             this.day = day;
             this.days = days;
             this.aqi = aqi;
+            this.todayMaxC = todayMaxC;
+            this.todayMinC = todayMinC;
         }
     }
 
@@ -111,9 +120,12 @@ final class Forecast {
         JSONObject current = reply.getJSONObject("current");
         double temp = current.getDouble("temperature_2m");
         int code = snowIfCold(current.getInt("weather_code"), temp, current.getDouble("relative_humidity_2m"));
+        JSONObject daily = reply.getJSONObject("daily");
         return new Report((int) Math.round(temp), (int) Math.round(current.getDouble("apparent_temperature")),
                 code, current.getInt("is_day") == 1,
-                days(reply.getJSONObject("daily")), aqiOrUnknown(where));
+                days(daily), aqiOrUnknown(where),
+                (int) Math.round(daily.getJSONArray("temperature_2m_max").getDouble(0)),
+                (int) Math.round(daily.getJSONArray("temperature_2m_min").getDouble(0)));
     }
 
     /**
