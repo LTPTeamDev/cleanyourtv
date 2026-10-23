@@ -30,6 +30,10 @@ import java.util.Map;
 public class PosterDream extends DreamService {
     private static final long SLIDE_MS = 12_000;
     private static final int MAX_ITEMS = 40;
+    /** The app whose preview channels are kept fresh; others are a fallback. */
+    private static final String FRESH_SOURCE = "top.rootu.lampa";
+    /** Below this many Lampa pictures, every app's channels are used. */
+    private static final int MIN_FRESH = 5;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<WatchNext.Item> items = new ArrayList<>();
@@ -83,8 +87,16 @@ public class PosterDream extends DreamService {
         super.onDreamingStarted();
         running = true;
         new Thread(() -> {
-            List<WatchNext.Item> found = new ArrayList<>(WatchNext.previews(this, MAX_ITEMS));
-            found.addAll(WatchNext.continueWatching(this, 10));
+            // Freshest first: what was watched in the last 30 days, then Lampa's own rows, which it refreshes on
+            // a schedule. Other apps' channels can sit untouched for years (RUTUBE's here dated from 2024), so they
+            // only fill in when Lampa has published next to nothing.
+            List<WatchNext.Item> found = new ArrayList<>(WatchNext.continueWatching(this, 10));
+            List<WatchNext.Item> previews = WatchNext.previews(this, 1000);
+            List<WatchNext.Item> fresh = new ArrayList<>();
+            for (WatchNext.Item item : previews) if (FRESH_SOURCE.equals(item.pkg)) fresh.add(item);
+            found.addAll(fresh.size() >= MIN_FRESH ? fresh : previews);
+            android.util.Log.i("TvHome.PosterDream", "watch next " + (found.size() - (fresh.size() >= MIN_FRESH
+                    ? fresh.size() : previews.size())) + ", lampa previews " + fresh.size() + ", all previews " + previews.size());
             // One picture per title, in random order.
             Map<String, WatchNext.Item> unique = new LinkedHashMap<>();
             for (WatchNext.Item item : found) {
@@ -92,9 +104,11 @@ public class PosterDream extends DreamService {
             }
             List<WatchNext.Item> list = new ArrayList<>(unique.values());
             Collections.shuffle(list);
+            if (list.size() > MAX_ITEMS) list = new ArrayList<>(list.subList(0, MAX_ITEMS));
+            final List<WatchNext.Item> shown = list;
             handler.post(() -> {
                 items.clear();
-                items.addAll(list);
+                items.addAll(shown);
                 if (running) showNext();
             });
         }, "poster-dream").start();
